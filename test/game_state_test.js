@@ -1,19 +1,23 @@
-import  GameState, {  memory, turn, phase } from '../src/game_state';
+import  { GameStateFactory,  currentplayer, start, GamePhases } from '../src/game_state';
 import { expect } from 'chai'
+
 
 describe('game state test', function() {
     it('init', function() {
-	expect(GameState).to.not.be.null;
-	expect(memory({gamestate:GameState})).to.have.lengthOf(0);
-	let currentmemory = memory({gamestate:GameState});
-	currentmemory.push({});
-	memory({gamestate:GameState,newval:currentmemory})
-	expect(memory({gamestate:GameState})).to.have.lengthOf(1);
+	
+	let gs = GameStateFactory()
+	expect(gs.getIn([currentplayer(gs),'memory']).toJS()).to.have.lengthOf(0);
+	expect(gs.getIn([currentplayer(gs),'clock']).toJS()).to.have.lengthOf(0);
+	
     })
 
     it('start', function() {
-	GameState.start();
-	expect(phase(GameState)).to.equal("draw");
-	expect(turn(GameState)).to.equal(0);
+	let gs = start(GameStateFactory());
+	expect(gs.getIn([currentplayer(gs),'memory']).toJS()).to.have.lengthOf(0);
+	expect(gs.getIn([currentplayer(gs),'clock']).toJS()).to.have.lengthOf(0);
+	
+	expect(gs.get('phase')).to.equal(GamePhases.standup)
+	expect(gs.get('turn')).to.equal(0)
+	
     })
 })
