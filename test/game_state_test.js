@@ -1,4 +1,4 @@
-import  { GameStateFactory,  currentplayer, start, GamePhases } from '../src/game_state';
+import  { GameStateFactory,  currentplayer, start, GamePhases, activecards } from '../src/game_state';
 import { expect } from 'chai'
 
 
@@ -19,5 +19,9 @@ describe('game state test', function() {
 	expect(gs.get('phase')).to.equal(GamePhases.standup)
 	expect(gs.get('turn')).to.equal(0)
 	
+    })
+    it('activecards',function() {
+	let gs = start(GameStateFactory())
+	expect(activecards(gs).toJS()).to.have.lengthOf(0)
     })
 })

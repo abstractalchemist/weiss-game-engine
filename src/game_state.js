@@ -29,19 +29,11 @@ function createfield() {
 	clock: [],
 	level: [],
 	climax: [],
-	get deck() {
-	},
-	set deck(param) {
-	},
-	get stock() {
-	},
-	set stock(param) {
-	},
-	get hand() {
-	},
-	set hand(param) {
+	deck: [],
+	stock: [],
+	hand: [],
+	reset() {
 	}
-	
     }
 }
 
@@ -63,6 +55,15 @@ function currentplayer(gamestate) {
     return 'player' + ((gamestate.get('turn') % 2) + 1);
 }
 
+function activecards(gamestate,player) {
+    player = player || currentplayer(gamestate)
+    return gamestate.getIn([player,'clock'])
+	.concat(gamestate.getIn([player,'stage','center']))
+	.concat(gamestate.getIn([player,'stage','back']))
+	.concat(gamestate.getIn([player,'level']))
+	.concat(gamestate.getIn([player,'memory']))
+}
+
 const GameState = GameStateFactory()
 
-export { GameStateFactory, currentplayer, GamePhases, start, GameState as default };
+export { GameStateFactory, currentplayer, GamePhases, start, activecards, GameState as default };

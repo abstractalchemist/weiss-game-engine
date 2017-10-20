@@ -14,13 +14,13 @@ const ControllerFactory = function(game_state, dispatcher) {
 	    return create(obs => {
 		obs.complete();
 	    })
-		.selectMany(this.standup.bind(this))
-	    	.selectMany(this.draw.bind(this))
-	    	.selectMany(this.clock.bind(this))
-	    	.selectMany(this.main.bind(this))
-	    	.selectMany(this.climax.bind(this))
-	    	.selectMany(this.attack.bind(this))
-	    	.selectMany(this.end.bind(this))
+		.mergeMap(this.standup.bind(this))
+	    	.mergeMap(this.draw.bind(this))
+	    	.mergeMap(this.clock.bind(this))
+	    	.mergeMap(this.main.bind(this))
+	    	.mergeMap(this.climax.bind(this))
+	    	.mergeMap(this.attack.bind(this))
+	    	.mergeMap(this.end.bind(this))
 		.subscribe(
 		    gs => {
 
@@ -30,7 +30,7 @@ const ControllerFactory = function(game_state, dispatcher) {
 		    },
 		    _ => {
 			// need a check here to determine if the game was ended in one of the previous phases
-					
+			
 		    })
 	    
 	},
@@ -39,7 +39,7 @@ const ControllerFactory = function(game_state, dispatcher) {
 	    let gs = game_state
 		.set('phase', GamePhases.standup)
 	    
-//	    console.log(gs)
+	    //	    console.log(gs)
 	    
 	    let standall = function(stagepositions) {
 		return stagepositions.map(o => {
@@ -48,49 +48,87 @@ const ControllerFactory = function(game_state, dispatcher) {
 		})
 	    }
 	    
-		
-	    
-	    return dispatcher.dispatch(gs, { when:"begin" })
+	    return dispatcher.phaseChange(gs,"begin")
 		.map(newgs => {
 		    let center = newgs.getIn([currentplayer(newgs),'stage','center'])
 		    let back = newgs.getIn([currentplayer(newgs),'stage','back'])
 		    return newgs.setIn([currentplayer(newgs),'stage','center'], standall(center)).setIn([currentplayer(newgs),'stage','back'], standall(back))
 		})
+		.mergeMap(gs => {
+		    return dispatcher.phaseChange(gs, "end")
+		})
 	    
 	},
-	draw() {
-	    return create(obs => {
-		obs.complete();
-	    })
-	},
-	clock() {
-	    return create(obs => {
-		obs.complete();
-	    })
+	draw(game_state) {
+	    let gs = game_state.set('phase', 'draw');
+	    return dispatcher.phaseChange(gs, "begin")
+		.map(gs => {
+
+		    let deckpos = [currentplayer(gs),'deck'];
+		    let handpos = [currentplayer(gs),'hand'];
+		    console.log(gs.getIn(deckpos))
+		    let card;
+		    gs = gs.updateIn(deckpos, list => {
+			card = list.get(0);
+			return list.shift();
+		    })
+		    return gs.updateIn(handpos, list => {
+			return list.push(card)
+		    })
+		})
+		.mergeMap(gs => {
+		    return dispatcher.phaseChange(gs, "end")
+		})
 	    
+	},
+	clock(game_state) {
+	    
+	    let gs = game_state.set('phase','clock');
+	    return dispatcher.phaseChange(gs, "begin")
+		.mergeMap(gs => {
+
+		    // the event should be listened for to clock a card from hand
+		    return dispatcher.dispatch(gs, {evt:"clock"})
+		})
+		.mergeMap(gs => {
+		    return dispatcher.phaseChange(gs, "end")
+		})
 	},
 	main() {
-	    return create(obs => {
-		obs.complete();
-	    })
+	    return dispatcher.phaseChange(gs, "begin")
+		.mergeMap(gs => {
+		    return dispatcher.phaseChange(gs, "end")
+		})
 
 	},
 	climax() {
-	    return create(obs => {
-		obs.complete();
-	    })
+	    return dispatcher.phaseChange(gs, "begin")
+
+	    // the event should be listened for to play a climax card
+		.mergeMap(gs => {
+		    return dispatcher.dispatch(gs, {evt:'climax'})
+		})
+		.mergeMap(gs => {
+		    return dispatcher.phaseChange(gs, "end")
+		})
 	    
 	},
 	attack() {
-	    return create(obs => {
-		obs.complete();
-	    })
+	    return dispatcher.phaseChange(gs, "begin")
+		.mergeMap(gs => {
+		    return dispatcher.phaseChange(gs, "end")
+		})
+
+
 	    
 	},
 	end() {
-	    return create(obs => {
-		obs.complete();
-	    })
+	    return dispatcher.phaseChange(gs, "begin")
+		.mergeMap(gs => {
+		    return dispatcher.phaseChange(gs, "end")
+		})
+
+
 	},
 
 	// util methods
@@ -103,4 +141,37 @@ const ControllerFactory = function(game_state, dispatcher) {
 
 const Controller = ControllerFactory(GameState, Dispatcher);
 
-export { ControllerFactory, Controller as default }
+// function which alters the gamestate;  finds the given selected card from hand, and places it into the clock
+
+function movecard(id, gs, from, to) {
+    let pos1 = [currentplayer(gs),'clock']
+    let pos2 = [currentplayer(gs),'hand'];
+    let card;
+    
+    return gs.updateIn(pos1, pos1list => {
+	let index;
+	card = pos1list.find((c,i) => {
+	    if(c.get('id') === id) {
+		index = i;
+		return true;
+	    }
+	    return false;
+	})
+	return pos1list.delete(index)
+	
+    }).updateIn(pos2, pos2list => {
+	return pos2list.push(card)
+    })
+    
+}
+
+function clock(id, gs) {
+    return movecard(id,gs,'hand','clock')
+}
+
+function climax(id,gs) {
+    return movecard(id,gs,'hand','climax')
+}
+
+
+export { ControllerFactory, clock, climax, Controller as default }
