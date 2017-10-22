@@ -48,7 +48,7 @@ const ControllerFactory = function(game_state, dispatcher) {
 		})
 	    }
 	    
-	    return dispatcher.phaseChange(gs,"begin")
+	    return dispatcher.phaseChange(gs)
 		.map(newgs => {
 		    let center = newgs.getIn([currentplayer(newgs),'stage','center'])
 		    let back = newgs.getIn([currentplayer(newgs),'stage','back'])
@@ -61,7 +61,7 @@ const ControllerFactory = function(game_state, dispatcher) {
 	},
 	draw(game_state) {
 	    let gs = game_state.set('phase', 'draw');
-	    return dispatcher.phaseChange(gs, "begin")
+	    return dispatcher.phaseChange(gs)
 		.map(gs => {
 
 		    let deckpos = [currentplayer(gs),'deck'];
@@ -84,7 +84,7 @@ const ControllerFactory = function(game_state, dispatcher) {
 	clock(game_state) {
 	    
 	    let gs = game_state.set('phase','clock');
-	    return dispatcher.phaseChange(gs, "begin")
+	    return dispatcher.phaseChange(gs)
 		.mergeMap(gs => {
 
 		    // the event should be listened for to clock a card from hand
@@ -95,14 +95,14 @@ const ControllerFactory = function(game_state, dispatcher) {
 		})
 	},
 	main() {
-	    return dispatcher.phaseChange(gs, "begin")
+	    return dispatcher.phaseChange(gs)
 		.mergeMap(gs => {
 		    return dispatcher.phaseChange(gs, "end")
 		})
 
 	},
 	climax() {
-	    return dispatcher.phaseChange(gs, "begin")
+	    return dispatcher.phaseChange(gs)
 
 	    // the event should be listened for to play a climax card
 		.mergeMap(gs => {
@@ -114,7 +114,7 @@ const ControllerFactory = function(game_state, dispatcher) {
 	    
 	},
 	attack() {
-	    return dispatcher.phaseChange(gs, "begin")
+	    return dispatcher.phaseChange(gs)
 		.mergeMap(gs => {
 		    return dispatcher.phaseChange(gs, "end")
 		})
@@ -123,7 +123,7 @@ const ControllerFactory = function(game_state, dispatcher) {
 	    
 	},
 	end() {
-	    return dispatcher.phaseChange(gs, "begin")
+	    return dispatcher.phaseChange(gs)
 		.mergeMap(gs => {
 		    return dispatcher.phaseChange(gs, "end")
 		})
@@ -141,7 +141,7 @@ const ControllerFactory = function(game_state, dispatcher) {
 
 const Controller = ControllerFactory(GameState, Dispatcher);
 
-// function which alters the gamestate;  finds the given selected card from hand, and places it into the clock
+// function which alters the gamestate;  finds the given selected card from the given locations, and places it into another location
 
 function movecard(id, gs, from, to) {
     let pos1 = [currentplayer(gs),'clock']
