@@ -11,40 +11,44 @@ const DispatcherFactory = function() {
 	register(listener) {
 	    listeners = listeners.push(listener)
 	},
-	dispatch(gamestate, evt) {
-	    
-	    let cards = activecards(gamestate);
+	dispatch(gamestate, evt, after) {
+ 	    let cards = activecards(gamestate);
 
-	    if(cards.size > 0) {
-//		console.log(`found ${cards.size}`)
-		const dispatchImpl = (index,gs) => {
+	    //		console.log(`found ${cards.size}`)
+	    const dispatchImpl = (index,gs) => {
 
-		    // dispatch to all cards
-		    if(index < cards.size) {
-			let card = cards.get(index);
- 			if(card) {
-			    return card.get('exec')(gs)
-				.mergeMap(gs => {
-				    return dispatchImpl(++index, gs)
-				})
-			}
-		    }
-		    // dispatch to all registered listeners
-		    return from(listeners.toJS())
-			.mergeMap(listener => {
-			    listener.exec(evt,gs)
+		// dispatch to all cards
+		if(index < cards.size) {
+		    let card = cards.get(index);
+ 		    if(card) {
+			return card.get('exec')({gs,evt}, gs => {
+			    return dispatchImpl(++index,gs)
 			})
+		    }
 		}
-		
-		return dispatchImpl(0, gamestate);
+		else {
+//		    console.log(after)
+		    if(after) {
+			return after(gs, _ => {
+			    // dispatch to all registered listeners
+			    return from(listeners.toJS())
+				.mergeMap(listener => {
+				    listener.exec(evt,gs)
+				})
+			})
+		    }
+		    return of(gs)
+		}
 	    }
-	    return of(gamestate)
+	    
+ 	    return dispatchImpl(0, gamestate);
 	    
 	    
 	    
 	},
-	phaseChange(gamestate, when = 'start') {
-	    return this.dispatch(gamestate, {when,evt:"phaseChange"})
+	phaseChange(gamestate, when, after) {
+	    console.log(`dispatching phaseChange ${gamestate.get('phase')}`)
+	    return this.dispatch(gamestate, {when,evt:"phaseChange"}, after)
 	}
     }
 }
